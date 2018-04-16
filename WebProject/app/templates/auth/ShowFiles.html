@@ -1,0 +1,17 @@
+{% extends "auth/StudentMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Download Files</h1>
+</div>
+<div class="col-md-4">
+        <ul>
+        {% for file in fileList %}
+            <br>
+            <td><a href="{{ url_for('static', filename='%s' % (file)) }}">{{file}}</a></td>
+            {# <li>{{ file }}</li> #}
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

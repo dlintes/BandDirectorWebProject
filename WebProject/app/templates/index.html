@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}WebBlogPost{% endblock %}
+
+{% block page_content %}
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+div.gallery{
+    max-width: 1300px;
+    background-color: #FFF;
+    margin: 40px auto 0 auto;
+    line-height: 1.65;
+    padding: 20px 50px;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+}
+div.form{
+   margin: 10px;
+}
+div.form:hover {
+    border: 5px solid black;
+
+}
+
+</style>
+</head>
+<body>
+
+<div class="gallery">
+    <div class = "form">
+        <a href="{{ url_for('auth.DirectorLogin') }}">
+    <img src="http://i63.tinypic.com/29z32pg.jpg" alt="Trolltunga Norway" width="500" height="650">
+  </a></div>
+    <div class = "form">
+ <a href="{{ url_for('auth.StudentLogin') }}">
+    <img src="http://i65.tinypic.com/vh6fz5.jpg" alt="Forest" width="500" height="650">
+  </a></div>
+</div>
+
+</body>
+</html>
+
+{% endblock %}

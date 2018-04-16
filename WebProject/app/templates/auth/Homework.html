@@ -1,0 +1,63 @@
+{% extends "auth/DirectorMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Homework review{% endblock %}
+
+{% block content %}
+<html>
+<head>
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {background-color: #f2f2f2;}
+</style>
+</head>
+<body>
+<div class="page-header">
+    <h1><center>Homework review</center></h1>
+</div>
+<div class="col-md-4 col-md-offset-4">
+        <div>
+            <form action="" method="post" name="teamform">
+                <div>
+                    <table width="300" border="2" >
+                        <tr>
+                            <th> Homework </th>
+                            <th> Due date </th>
+                        </tr>
+                        {% for hw in hw_dict %}
+                        <tr>
+                            <td>{{ hw }}</td>
+                            <td>{{ hw_dict[hw] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <br>
+                <div>
+                    <select name="homework" width="3000px">
+                        {% for hw in hw_dict %}
+                            <option value="{{ hw }}" SELECTED>{{ hw }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" name ="btn" value="Extend due date">
+                    <br>
+                    <br>
+                    <input type="submit" name ="btn" value="Add homework">
+                    <br>
+                </div>
+            </form>
+        </div>
+</div>
+{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,53 @@
+{% extends "auth/DirectorMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Professor review{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><center>Director review</center></h1>
+</div>
+<div class="col-md-4 col-md-offset-4">
+        <div>
+            <form action="" method="post" name="teamform">
+                {{ teamform.hidden_tag() }}
+                Professor: {{ teamform.title }}<br>
+                <div>
+                    <table>
+                        <tr>
+                            <th> File name </th>
+                            <th> Student name </th>
+                            <th> Review status </th>
+                            <th> Grade </th>
+                            <th> Professor notes </th>
+                        </tr>
+                        {% for member in teamform.grid %}
+                        <tr>
+                            <td>{{ member.file_name }}</td>
+                            <td>{{ member.student_name }}</td>
+                            <td>{{ member.status }}</td>
+                            <td>{{ member.grade }}</td>
+                            <td>{{ member.notes }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <br>
+                <div>
+                    <select name="file" width="3000px">
+                        {% for x in file_list %}
+                            <option value="{{ x }}" SELECTED>{{ x }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" name ="btn" value="Review file">
+                    {#  <input type="submit" name = "btn" value="Mark reviewed"> #}
+                    <br>
+                    <input type="text" name="grade" placeholder="Enter grade">
+                    <input type="submit" name = "btn" value="Grade">
+                    <br>
+                    <input type="text" name="notes" placeholder="Enter notes">
+                </div>
+            </form>
+        </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "auth/DirectorMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Add student{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.button {
+    background-color: white;
+    color: black;
+    border: 2px solid #e7e7e7;
+    border-radius: 11px;
+    margin: 21px 2px;
+}
+
+.button:hover {background-color: #e7e7e7;}
+}
+</style>
+</head>
+<body>
+
+</div>
+<div class="page-header">
+    <h1><center>Add student to class</center></h1>
+</div>
+<div class="col-md-4 col-md-offset-4">
+    <form action="http://localhost:5000/auth/AddStudent" method=post enctype=multipart/form-data>
+        {{ wtf.quick_form(form) }}
+        <label>Select student:</label>
+        <select name="student" width="3000px">
+                    {% for x in student_list %}
+                        <option value="{{ x }}" SELECTED>{{ x }}</option>
+                    {% endfor %}
+        </select>
+        <br>
+        <button class="button">Add Student</button>
+       <!-- <p></p><input type="submit" name ="btn" value="Add Student">-->
+    </form>
+</div>
+<!--
+<div class="page-header">
+    <h1><center>Add student to class</center></h1>
+</div>
+<div class="col-md-4 col-md-offset-4">
+
+    {{ wtf.quick_form(form) }}
+</div>-->
+</body>
+</html>
+
+{% endblock %}
+

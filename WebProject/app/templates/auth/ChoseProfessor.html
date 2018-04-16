@@ -1,0 +1,21 @@
+{% extends "auth/StudentMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Upload Files</h1>
+</div>
+<div class="col-md-4">
+    <form action ="" method=post>
+        <label>Select professor:</label>
+        <select name="professor" width="3000px">
+                    {% for x in professor_list %}
+                        <option value="{{ x }}" SELECTED>{{ x }}</option>
+                    {% endfor %}
+        </select>
+        <br>
+        <input type="submit" name ="btn" value="Select professor">
+        <br>
+    </form>
+    </div>
+{% endblock %}

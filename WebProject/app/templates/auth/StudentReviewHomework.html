@@ -1,0 +1,42 @@
+{% extends "auth/StudentMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Student review{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Student review</h1>
+</div>
+<div class="col-md-4">
+        <div>
+            <form action="" method="post" name="StudentHomeworkGridForm">
+                {{ StudentHomeworkGridForm.hidden_tag() }}
+                Professor: {{ StudentHomeworkGridForm.title }}<br>
+                <div>
+                    <table>
+                        <tr>
+                            <th> File name </th>
+                            <th> Assignment </th>
+                        </tr>
+                        {% for member in StudentHomeworkGridForm.grid %}
+                        <tr>
+                            <td>{{ member.file_name }}</td>
+                            <td>{{ member.hw_name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <br>
+                <div>
+                    <select name="file" width="3000px">
+                        {% for x in file_list %}
+                            <option value="{{ x }}" SELECTED>{{ x }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" name ="btn" value="Review file">
+                    <br>
+                </div>
+            </form>
+        </div>
+</div>
+{% endblock %}

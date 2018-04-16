@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>User Not Registerd<</title>
+	<style>
+		body {
+		    text-align:center
+			font-size: 40px;
+			color: #000; /* Note that borders that do not have an explicit color will take on this color declaration */
+			margin: 20;
+			padding: 0;
+		}
+
+		p {
+			padding: 4em;
+			margin: 2em;
+		}
+
+		code {
+    		text-align: center;
+			font: 1em/2.5 Times New Roman;
+		}
+
+		#border {
+		    text-align: center;
+			border: 5px solid;
+			border-color: black #444 #888 #ccc;
+		}
+		}
+	</style>
+</head>
+<body>
+	<p id="border"><code><strong>Error: There are no registered users having this email</strong></code></p>
+
+	<!-- Link back to prevpage -->
+    <!-- <a href='http://127.0.0.1:5000/auth/AddStudent'> -->
+
+	<p><a href="{{ url_for('auth.AddStudent') }}"><img src="http://i63.tinypic.com/mrcndw.png" style = "display:block; margin-left: auto; margin-right: auto;" width="100" height="100"alt="HTML Dog"></a></p>
+</body>
+</html>

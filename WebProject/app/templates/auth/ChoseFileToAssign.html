@@ -1,0 +1,23 @@
+{% extends "auth/DirectorMenu.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Assign Files{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <title>Upload new File</title>
+</div>
+<div class="col-md-4 col-md-offset-4">
+    <form action="" method=post enctype=multipart/form-data>
+        <label>Select :</label>
+        <select name="homework" width="3000px">
+                    {% for x in hw_list %}
+                        <option value="{{ x }}" SELECTED>{{ x }}</option>
+                    {% endfor %}
+        </select>
+        <br>
+        <p></p><input type="submit" name ="btn" value="Select homework">
+
+    </form>
+</div>
+{% endblock %}
