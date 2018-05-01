@@ -13,6 +13,12 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('Keep me logged in')
     submit = SubmitField('Log In')
 
+class StudentLoginForm(FlaskForm):
+    email = StringField('Email', validators=[Required(), Length(1, 64),
+                                             Email()])
+    password = PasswordField('Password', validators=[Required()])
+    remember_me = BooleanField('Keep me logged in')
+    submit = SubmitField('Log In')
 
 class RegistrationForm(FlaskForm):
     email = StringField('Email', validators=[Required(), Length(1, 64),
@@ -72,7 +78,6 @@ class StudentRegistrationForm(FlaskForm):
                                           'First must have only letters, ')])
     email = StringField('Email', validators=[Required(), Length(1, 64),
                                            Email()])
-    ##director_email = StringField('Director email', validators=[Required(), Length(1, 64),Email()])
     username = StringField('Username', validators=[
         Required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,
                                           'Usernames must have only letters, '
@@ -114,7 +119,8 @@ class RowForm(FlaskForm):
     student_name = StringField('student_name')
     status = StringField('status')
     grade = StringField('grade')
-    notes = StringField('notes')
+    notes = StringField('notes', validators=[ Length(1, 64)])
+    hw_name = StringField('hw_name')
 
 
 class GridForm(FlaskForm):
@@ -145,13 +151,10 @@ class EmailProfessorForm(FlaskForm):
                 raise ValidationError('Email not registered.')
 
 class AddStudentToClassForm(FlaskForm):
-    ##first_name = StringField('First name',  validators=[InputRequired(),
     first_name = StringField('First name', validators=[
         Length(1, 64), Regexp('^[A-Za-z][A-Za-z]*$', 0, 'First names must have only letters.')])
-    ##last_name = StringField('Last name', validators=[InputRequired(),
     last_name = StringField('Last name', validators=[
         Length(1, 64), Regexp('^[A-Za-z][A-Za-z]*$', 0, 'First names must have only letters.')])
-    ##email = StringField('Email', validators=[InputRequired(),Length(1, 64), Email()])
     email = StringField('Email', validators=[Length(1, 64), Email()])
     submit = SubmitField('Add student')
 
@@ -171,6 +174,7 @@ class SearchStudentsRowForm(FlaskForm):
     first_name = StringField('first_name')
     last_name = StringField('last_name')
     email = StringField('email')
+    student_id = StringField('id')
 
 class SearchStudentsGridForm(FlaskForm):
     title = StringField('title')
@@ -203,6 +207,27 @@ class ExtendDateForm(FlaskForm):
     submit = SubmitField('Submit date')
 
 class ChoseMusicSheetNameForm(FlaskForm):
-    file_name = StringField('File name',  render_kw={"placeholder": "Enter the name of the file to be generated"}, validators=[
+    file_name = StringField('File name',  render_kw={"placeholder": "Enter pattern file name"}, validators=[
         Required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0,'File names must have only letters,numbers, dots or underscores')])
+    out_file = StringField('Out file', render_kw={"placeholder": "Enter out file (PDF format)"}, validators=[
+        Required(), Length(1, 64),
+        Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 0, 'File names must have only letters,numbers, dots or underscores')])
+    composer = StringField('Composer', render_kw={"placeholder": "Composer name"}, validators=[
+        Required(), Length(1, 64),
+        Regexp('^[A-Za-z][A-Za-z]*$', 0, 'Names must have only letters and numbers.')])
+    nr_notes = StringField('Notes', render_kw={"placeholder": "Enter number of notes to generate"}, validators=[
+        Required(), Length(1, 64), Regexp('^[A-Za-z][A-Za-z]*$', 0, 'Names must have only letters and numbers.')])
     submit = SubmitField('Generate music sheet')
+    back = SubmitField('Back')
+
+class ProfessorChangePwdForm(FlaskForm):
+    new_pwd1 = PasswordField('Password', validators=[Required(), EqualTo('new_pwd2', message='Passwords must match.')])
+    new_pwd2 = PasswordField('Confirm password', validators=[Required()])
+
+    submit = SubmitField('Change password')
+
+class StudentChangePwdForm(FlaskForm):
+    new_pwd1 = PasswordField('Password', validators=[Required(), EqualTo('new_pwd2', message='Passwords must match.')])
+    new_pwd2 = PasswordField('Confirm password', validators=[Required()])
+
+    submit = SubmitField('Change password')

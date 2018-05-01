@@ -9,12 +9,9 @@ from ..models import Director, Student, UploadFiles, AddStudent
 from ..email import send_email
 from .forms import LoginForm, ReqForm, RegistrationForm, DirectorRegistrationForm, StudentRegistrationForm, AddStudentForm, \
     GridForm, RowForm, EmailProfessorForm, AddStudentToClassForm, SearchStudentsRowForm, SearchStudentsGridForm, ProfessorForm, \
-    StudentHomeworkRowForm, StudentHomeworkGridForm, AddHomeworkForm, ExtendDateForm, ChoseMusicSheetNameForm, ProfessorChangePwdForm, \
-    StudentChangePwdForm, StudentLoginForm
+    StudentHomeworkRowForm, StudentHomeworkGridForm, AddHomeworkForm, ExtendDateForm, ChoseMusicSheetNameForm
 from sqlalchemy import text
 from random import randint
-import subprocess
-
 
 from app import create_app
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
@@ -86,7 +83,7 @@ def DirectorLogin():
 def StudentLogin():
     """ Student login page. """
     global g_student_id
-    form = StudentLoginForm()
+    form = LoginForm()
     if form.validate_on_submit():
         user = Student.query.filter_by(email=form.email.data).first()
         if user is not None and user.verify_password(form.password.data):
@@ -106,6 +103,7 @@ def logout():
 @auth.route('/RegisterDirector', methods=['GET', 'POST'])
 def RegisterDirector():
     """ Function to add a new professor to the DB along with the required info. """
+    ##form = DirectorRegistrationForm()
     form = DirectorRegistrationForm()
     if form.validate_on_submit():
         director = Director(first_name=form.first_name.data,
@@ -171,13 +169,11 @@ def uploader():
       if rec_id is not None:
           sql = ("update web.upload_files set file_upd_time = '" + file_upd_time + "' where id = " + str(rec_id))
           db.engine.execute(sql)
-          flash("File is already loaded. Changed update time.")
-          return redirect(url_for('auth.upload'))
+          return "File is already loaded. Changed update time."
 
       sql = ("insert into web.upload_files (file_name, file_location, director_id, file_upd_time, hw_id) values('" + filename + "','" + R_STATIC_FOLDER + "'," + str(g_director_id) + ",'" + file_upd_time + "'," + str(hw_id) + ")")
       db.engine.execute(sql)
-      flash('File uploaded successfully')
-      return redirect(url_for('auth.upload'))
+      return 'file uploaded successfully'
 
 @auth.route("/ChoseProfessor", methods=['GET', 'POST'])
 def ChoseProfessor():
@@ -219,24 +215,21 @@ def StudentFileUploader():
       sql = ("select id,hw_deadline from web.homeworks where director_id = " + str(g_professor_id) + " and hw_name = '" + hw_name.strip() + "'")
       result = db.engine.execute(sql)
       for row in result:
-            hw_id = row[0]
-            hw_deadline = row[1]
+        hw_id = row[0]
+        hw_deadline = row[1]
 
       current_time_epoch = int(time.time())
       utc_time = time.strptime(str(hw_deadline), "%Y-%m-%d %H:%M:%S")
       hw_deadline_epoch = timegm(utc_time)
       if current_time_epoch > hw_deadline_epoch:
-          flash("Current time is past deadline: " + str(hw_deadline) + ". Homework cannot be uploaded.")
-          return redirect(url_for('auth.ChoseProfessor'))
+         return "Current time is past deadline: " +  str(hw_deadline) + ". Homework cannot be uploaded."
 
       f = request.files['file']
       filename = secure_filename(f.filename)
       STATIC_FOLDER = os.path.abspath("../" + "/static")
       R_STATIC_FOLDER = STATIC_FOLDER.replace('\\', '\\\\')
       f.save(os.path.join(STATIC_FOLDER, filename))
-      sql = text("select id,reviewed from web.student_files where file_name = '" + str(filename) +\
-                 "' and file_location = '" + R_STATIC_FOLDER + "' and student_id = " +\
-                 str(g_student_id) + " and director_id = " +str(g_professor_id) + " and hw_id = " + str(hw_id))
+      sql = text("select id,reviewed from web.student_files where file_name = '" + str(filename) + "' and file_location = '" + R_STATIC_FOLDER + "' and student_id = " + str(g_student_id) + " and director_id = " +str(g_professor_id))
       result = db.engine.execute(sql)
       rec_id = None
       for row in result:
@@ -250,65 +243,135 @@ def StudentFileUploader():
             sql = text('insert into web.student_files (file_name,file_location,student_id,hw_id,director_id) values(\'' + filename + '\',\'' + R_STATIC_FOLDER + '\',' + str(g_student_id) + ',' + str(hw_id) + ',' +str(g_professor_id) + ')')
             result = db.engine.execute(sql)
           else:
-              flash("File has been reviewed. Cannot upload another version.")
-              return redirect(url_for('auth.ChoseProfessor'))
+              return " File has been reviewed. Cannot upload another version."
       else:
           sql = text('insert into web.student_files (file_name,file_location,student_id,hw_id,director_id) values(\'' + filename + '\',\'' + R_STATIC_FOLDER + '\',' + str(g_student_id) + ',' + str(hw_id) + ',' +str(g_professor_id) + ')')
           result = db.engine.execute(sql)
-      flash("'File: " + filename + " uploaded successfully'")
-      return redirect(url_for('auth.ChoseProfessor'))
-
-@auth.route("/DeleteStudent/<student_id>", methods=['GET', 'POST'])
-def DeleteStudent(student_id):
-    """ Function to add a student to a class. The professor adds a student to his/her class. """
-    ##form = AddStudentToClassForm()
-    student = {}
-    ##student['name'] = "name"
-    ##student['student_id'] = student_id
-
-    studentId = student_id.split("=")[-1]
-    studentId = int(studentId.replace("\"", '').replace('>', ''))
-    sql = ("delete from web.director_student where director_id = " + str(g_director_id) + " and student_id = " + str(studentId))
-    result = db.engine.execute(sql)
-
-    return redirect(url_for('auth.SearchStudents'))
+      return 'file uploaded successfully'
 
 @auth.route("/AddStudent", methods=['GET', 'POST'])
 def AddStudent():
     """ Function to add a student to a class. The professor adds a student to his/her class. """
-    print(g_director_id) ##
-    global studentId
+    ##form = AddStudentToClassForm()
+    print(g_director_id)
     student_list = []
-    dctStudent = {}
-    sql =  ("select  CONCAT(CONCAT(first_name, ' ', last_name), ' - ', email) as firstlast "
-            "from web.student "
+    sql =  ("select  id, CONCAT(first_name, ' ', last_name) as firstlast"
+            "from web.student"
             "where id not in (select student_id from web.director_student where director_id = " + str(g_director_id) + ")")
     result = db.engine.execute(sql)
     for row in result:
-        student_list.append(row[0])
+        student_list.append(row[1])
     if request.method == 'POST':
-        if request.form['btn'] == 'Add Student':
-            if not ('student' in request.form.keys()):
-                return "No student was selected."
+        sql = ("select id, first_name, last_name "
+                   "from web.student ")
+        result = db.engine.execute(sql)
+        for row in result:
+            student_list.append(row[0])
+           ## student_id_dict[row[0]] = row[1]
 
-            studentEmail = request.form['student'].split('-')[1].strip()
-            sql = "select id from web.student where email = '" + studentEmail + "'"
+        email = form.data['email'].strip()
+        if len(form.data['email'].strip()) > 0:
+            sql = ("select id, first_name, last_name "
+                   "from web.student "
+                   "where email = '" + str(email)) + "'"
             result = db.engine.execute(sql)
-            studentId = None
-            for row in result:
-                studentId = row[0]
-            if studentId is not None:
-                sql = ("insert into web.director_student (director_id,student_id) values(" + str(g_director_id) + "," + str(studentId) + ")")
-                try:
-                    result = db.engine.execute(sql)
-                except Exception as err:
-                    return "Error: " + str(format(err))
-            else:
-                return "Could not retrieve student with email: " + studentEmail
-        return redirect(url_for('auth.SearchStudents'))
+            if result is not None:
+                if result.rowcount == 0:
+                    return render_template('auth/addstudentnoregisteredusers.html',email = email)
+                elif result.rowcount > 1:
+                    return "There are multiple registered users having email: " + email
+                for row in result:
+                    student_id = row[0]
+                    first_name = row[1]
+                    last_name = row[2]
+        else:
+            first_name = form.data['first_name'].strip()
+            last_name = form.data['last_name'].strip()
+            if (len(first_name) > 0) and (len(last_name) > 0):
+                sql = ("select id, email "
+                       "from web.student "
+                       "where first_name = '" + str(first_name)) + "' and last_name = '" + str(last_name) +"'"
+                result = db.engine.execute(sql)
+                if result is not None:
+                    if result.rowcount == 1:
+                        for row in result:
+                            student_id = row[0]
+                            email = row[1]
+                    else:
+                        if result.rowcount == 0:
+                            return "There are no registered users having first name: " + str(first_name) + " and last name: " +  str(last_name)
+                        return "There are more than one registered users having first name: " + str(first_name) + " and last name: " + str(last_name)
+        # If we got here we have a student_id
+        sql = text('select id from web.director_student where director_id = ' + str(g_director_id) + ' and student_id = ' + str(student_id))
+        result = db.engine.execute(sql)
+        if result.rowcount == 0:
+            sql = text('insert into web.director_student (director_id,student_id) values(' + str(g_director_id) + ',' + str(student_id) + ')')
+            result = db.engine.execute(sql)
+            ## ADd here flash message for successfull added student.
+        else:
+            return "Student: " + first_name + " " + last_name + " is already added to class."
+        return redirect(url_for('auth.AddStudent'))
+    return render_template('auth/AddStudent.html', form=form,student_list=student_list)
 
-    return render_template('auth/AddStudent.html', student_list=student_list)
+"""
+@auth.route("/AddStudent", methods=['GET', 'POST'])
+def AddStudent():
+    form = AddStudentToClassForm()
+    student_list = []
+    ##student_id_dict = {}
+    if request.method == 'POST' and form.validate_on_submit():
+        sql = ("select id, first_name, last_name "
+                   "from web.student ")
+        result = db.engine.execute(sql)
+        for row in result:
+            student_list.append(row[0])
+           ## student_id_dict[row[0]] = row[1]
 
+        email = form.data['email'].strip()
+        if len(form.data['email'].strip()) > 0:
+            sql = ("select id, first_name, last_name "
+                   "from web.student "
+                   "where email = '" + str(email)) + "'"
+            result = db.engine.execute(sql)
+            if result is not None:
+                if result.rowcount == 0:
+                    return render_template('auth/addstudentnoregisteredusers.html',email = email)
+                    ##return "There are no registered users having email: " + email
+                elif result.rowcount > 1:
+                    return "There are multiple registered users having email: " + email
+                for row in result:
+                    student_id = row[0]
+                    first_name = row[1]
+                    last_name = row[2]
+        else:
+            first_name = form.data['first_name'].strip()
+            last_name = form.data['last_name'].strip()
+            if (len(first_name) > 0) and (len(last_name) > 0):
+                sql = ("select id, email "
+                       "from web.student "
+                       "where first_name = '" + str(first_name)) + "' and last_name = '" + str(last_name) +"'"
+                result = db.engine.execute(sql)
+                if result is not None:
+                    if result.rowcount == 1:
+                        for row in result:
+                            student_id = row[0]
+                            email = row[1]
+                    else:
+                        if result.rowcount == 0:
+                            return "There are no registered users having first name: " + str(first_name) + " and last name: " +  str(last_name)
+                        return "There are more than one registered users having first name: " + str(first_name) + " and last name: " + str(last_name)
+        # If we got here we have a student_id
+        sql = text('select id from web.director_student where director_id = ' + str(g_director_id) + ' and student_id = ' + str(student_id))
+        result = db.engine.execute(sql)
+        if result.rowcount == 0:
+            sql = text('insert into web.director_student (director_id,student_id) values(' + str(g_director_id) + ',' + str(student_id) + ')')
+            result = db.engine.execute(sql)
+            ## ADd here flash message for successfull added student.
+        else:
+            return "Student: " + first_name + " " + last_name + " is already added to class."
+        return redirect(url_for('auth.AddStudent'))
+    return render_template('auth/AddStudent.html', form=form,student_list=student_list)
+"""
 # Inserts student files in the database. Called from UploadStudentFiles.html
 @auth.route('/AssignFile', methods = ['GET', 'POST'])
 def AssignFile():
@@ -320,8 +383,8 @@ def AssignFile():
             result = db.engine.execute(sql)
             for row in result:
                 if row[0] > 0:
-                    flash("File id: " + str(selected_file_id) + " has already been assigned to this student.")
-                    return redirect(url_for('auth.ChoseFileToAssign'))
+                    return "File has already been assigned to this student."
+
             # we can safely insert now as we verified earlier that the record doesn't exist.
             sql = ("insert into web.dir_student_files (director_id,student_id,file_id) values(" + str(g_director_id) + "," +str(selected_student_id) + "," + str(selected_file_id) + ")")
             result = db.engine.execute(sql)
@@ -336,15 +399,14 @@ def AssignFile():
                 result = db.engine.execute(sql)
                 for row in result:
                     if row[0] > 0:
-                        flash("File id: " + str(selected_file_id) + " has already been assigned to student id: " + str(row[0]))
+                        print("File has already been assigned to student id: " + str(row[0]))
                         continue
                     else:
                         # we can safely insert now as we verified earlier that the record doesn't exist.
                         sql = ("insert into web.dir_student_files (director_id,student_id,file_id) values(" + str(
                             g_director_id) + "," + str(id[0]) + "," + str(selected_file_id) + ")")
                         result = db.engine.execute(sql)
-                        flash("File id: " + str(selected_file_id) + " has been assigned successfully")
-    return redirect(url_for('auth.ChoseFileToAssign'))
+    return "File assigned successfully"
 
 @auth.route("/ChoseFileToAssign", methods=['GET', 'POST'])
 def ChoseFileToAssign():
@@ -400,52 +462,16 @@ def show_files():
 # To be deployed later
 @auth.route("/PracticeMusic", methods=['GET', 'POST'])
 def PracticeMusic():
-    sql = ("select uf.file_name, uf.director_id, uf.hw_id, d.first_name, d.last_name, h.hw_name "
-           "from web.upload_files as uf join web.director as d on uf.director_id = d.id "
-           "join web.homeworks as h on uf.hw_id = h.id "
-           "where RIGHT(uf.file_name,4) = '.mid' and uf.director_id in "
-           "(select director_id from web.dir_student_files where student_id = " + str(g_student_id) + ")")
-    print("SQL: ", sql)
-    result = db.engine.execute(sql)
-    fileList = []
-    for row in result:
-        dctFile = {}
-        dctFile['file_name'] = row[0]
-        dctFile['director_id'] = row[1]
-        dctFile['hw_id'] = row[2]
-        dctFile['first_name'] = row[3]
-        dctFile['last_name'] = row[4]
-        dctFile['hw_name'] = row[5]
-        fileList.append(dctFile)
-    print(fileList)
-
-    return render_template('auth/PracticeMusic.html', files = fileList)
-
-@auth.route("/PlayMidiFile/<file_name>", methods=['GET', 'POST'])
-def PlayMidiFile(file_name):
-    """ Function to play a midi file from the ones assigned to the student. """
-    print(file_name)
-    cmd = 'start ' + STATIC_FOLDER + '\\' + str(file_name.strip())
-    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (out, err) = proc.communicate()
-    return redirect(url_for('auth.PracticeMusic'))
-
-"""
-@auth.route("/ProfessorReviewFiltered/<filter_type>", methods=['GET', 'POST'])
-def ProfessorReviewFiltered(filter_type):
-    print(filter_type)
-    ##cmd = 'start ' + STATIC_FOLDER + '\\' + str(file_name.strip())
-    ##proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    ##(out, err) = proc.communicate()
-    return redirect(url_for('auth.ProfessorReviewFiles'))
+    pass # place holder
+    return render_template('auth/PracticeMusic.html')
 
 # To be deployed later
 @auth.route("/UploadNewRecording", methods=['GET', 'POST'])
 def UploadNewRecording():
     pass # place holder
     return render_template('auth/UploadNewRecording.html')
-"""
 
+# To be deployed later
 @auth.route("/EmailProfessor", methods=['GET', 'POST'])
 def EmailProfessor():
     """ Function to send email to selected professor. """
@@ -497,38 +523,18 @@ def DirectorMenu():
             return redirect(url_for('auth.DirectorMenu'))
     return render_template('auth/DirectorMenu.html')
 
-@auth.route("/ProfessorReviewFiles/<filter_type>", methods=['GET', 'POST'])
-def ProfessorReviewFiles(filter_type):
+@auth.route("/ProfessorReviewFiles", methods=['GET', 'POST'])
+def ProfessorReviewFiles():
     """ Function to allow professor to review files uploaded by students. """
-    print("Filter type: ", filter_type)
     submitForm = ReqForm()
     teamform = GridForm()
     teamform.title.data = g_director_name
-    if (filter_type == 'A'):
-        sql = ("select sf.id, sf.file_name, CONCAT(st.first_name, ' ', st.last_name), sf.reviewed, sf.grade,sf.notes, hw.hw_name "
-            "from web.student_files sf "
-            "join web.student st on sf.student_id = st.id "
-            "join web.director_student ds on sf.student_id = ds.student_id "
-            "join web.homeworks hw on sf.hw_id = hw.id "
-            "where ds.director_id = " + str(g_director_id) + " and sf.director_id = " + str(g_director_id) + " "
-            "order by sf.reviewed DESC")
-    elif (filter_type == 'R'):
-        sql = ("select sf.id, sf.file_name, CONCAT(st.first_name, ' ', st.last_name), sf.reviewed, sf.grade,sf.notes, hw.hw_name "
-            "from web.student_files sf "
-            "join web.student st on sf.student_id = st.id "
-            "join web.director_student ds on sf.student_id = ds.student_id "
-            "join web.homeworks hw on sf.hw_id = hw.id "
-            "where ds.director_id = " + str(g_director_id) + " and sf.director_id = " + str(g_director_id) + " "
-            "and sf.reviewed = 0 order by sf.reviewed DESC")
-    else:
-        sql = ("select sf.id, sf.file_name, CONCAT(st.first_name, ' ', st.last_name), sf.reviewed, sf.grade,sf.notes, hw.hw_name "
-            "from web.student_files sf "
-            "join web.student st on sf.student_id = st.id "
-            "join web.director_student ds on sf.student_id = ds.student_id "
-            "join web.homeworks hw on sf.hw_id = hw.id "
-            "where ds.director_id = " + str(g_director_id) + " and sf.director_id = " + str(g_director_id) + " "
-            "and sf.reviewed = 1 order by sf.reviewed DESC")
 
+    sql = ("select sf.id, sf.file_name, CONCAT(st.first_name, ' ', st.last_name), sf.reviewed, sf.grade,sf.notes "
+        "from web.student_files sf "
+        "join web.student st on sf.student_id = st.id "
+        "join web.director_student ds on sf.student_id = ds.student_id "
+        "where ds.director_id = " + str(g_director_id) + " and sf.director_id = " + str(g_director_id) + " order by sf.reviewed DESC")
     result = db.engine.execute(sql)
 
     file_list = []
@@ -543,7 +549,6 @@ def ProfessorReviewFiles(filter_type):
             member_form.status = 'NOT REVIEWED'
         member_form.grade = member[4]
         member_form.notes = member[5]
-        member_form.hw_name = member[6]
 
         file_list.append(member[1])
         teamform.grid.append_entry(member_form)
@@ -557,16 +562,14 @@ def ProfessorReviewFiles(filter_type):
             return send_from_directory(directory=STATIC_FOLDER, filename=selected_file)
         if request.form['btn'] == 'Grade':
             if request.form['grade'] is None or len(request.form['grade']) == 0:
-                ##return "Grade has to be between 0 and 100"
-                flash("Grade has to be between 0 and 100")
-                return redirect(url_for("auth.ProfessorReviewFiles", filter_type=filter_type))
+               return "Grade has to be between 0 and 100"
             sql = ("update web.student_files set grade = " + str(request.form['grade']) + ", time_graded = NOW() where file_name = '" + selected_file + "'")
             result = db.engine.execute(sql)
             if request.form['notes'] is not None:
                 sql = ("update web.student_files set notes = '" + str(request.form['notes']) + "' where file_name = '" + selected_file + "'")
             result = db.engine.execute(sql)
 
-        return redirect(url_for("auth.ProfessorReviewFiles",filter_type=filter_type))
+        return redirect(url_for('auth.ProfessorReviewFiles'))
     return render_template('auth/ProfessorReviewFiles.html', teamform = teamform, submitForm = submitForm,file_list = file_list)
 
 @auth.route("/SearchStudents", methods=['GET', 'POST'])
@@ -575,7 +578,7 @@ def SearchStudents():
     search_student_form = SearchStudentsGridForm()
     search_student_form.title.data = str(g_director_name)
 
-    sql =   ("select st.first_name, st.last_name, st.email, st.id "
+    sql =   ("select st.first_name, st.last_name, st.email "
         "from web.student st "
         "   join web.director_student ds on st.id = ds.student_id "
         "where ds.director_id = " +str(g_director_id))
@@ -585,7 +588,6 @@ def SearchStudents():
         member_form.first_name = member[0]
         member_form.last_name = member[1]
         member_form.email = member[2]
-        member_form.student_id = member[3]
         search_student_form.grid.append_entry(member_form)
 
     return render_template('auth/SearchStudents.html', search_student_form = search_student_form)
@@ -760,119 +762,66 @@ def StudentChoseProfessorReviewHomework():
         return redirect(request.args.get('next') or url_for('auth.StudentReviewHomework'))
     return render_template('auth/StudentChoseProfessorReviewHomework.html', professor_list=professor_list)
 
-# Password change. @login_required decorator will confirm that we are already logged in. No need to verify old password
-@auth.route("/ProfessorChangePwd", methods=['GET', 'POST'])
-@login_required
-def ProfessorChangePwd():
-    """ Function to upload homework. """
-    form = ProfessorChangePwdForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            user = current_user
-            user.password = form.new_pwd1.data
-            db.session.add(user)
-            db.session.commit()
-            flash('Password has been updated!', 'success')
-            return redirect(url_for('auth.DirectorLogin'))
-
-    return render_template('auth/ProfessorChangePwd.html', form = form)
-
-# Password change. @login_required decorator will confirm that we are already logged in. No need to verify old password
-@auth.route("/StudentChangePwd", methods=['GET', 'POST'])
-@login_required
-def StudentChangePwd():
-    """ Function to upload homework. """
-    form = StudentChangePwdForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            ##load_student(student_id)
-            ##user = current_user
-            ##user = Student.query.filter_by(email=form.email.data).first()
-            ##ser = Student.query.filter_by(id=g_student_id)
-            user = Student.query.get(int(g_student_id))
-            user.password = form.new_pwd1.data
-            db.session.add(user)
-            db.session.commit()
-            flash('Password has been updated!', 'success')
-            return redirect(url_for('auth.StudentLogin'))
-
-    return render_template('auth/StudentChangePwd.html', form = form)
-
 @auth.route("/GenerateMusic", methods=['GET', 'POST'])
 def GenerateMusic():
     """ This section starts from a phrase and generates music using LilyPond and converts it into
         a PDF file that will be stored in the standard static location.
     """
 
-    form = ChoseMusicSheetNameForm(nr_notes = 1000)
+    form = ChoseMusicSheetNameForm(nr_notes = 100)
     if request.method == 'POST':
-        try:
-            if 'back' in request.form.keys():
-                return redirect(url_for('auth.DirectorMenu'))
-            patternFile = request.form['file_name']
-            lilyFile = request.form['out_file']
-            composer = request.form['composer']
-            nrGeneratedNotes = request.form['nr_notes']
+        patternFile = request.form['file_name']
+        lilyFile = request.form['out_file']
+        composer = request.form['composer']
+        nrGeneratedNotes = request.form['nr_notes']
 
-            patternFile =  STATIC_FOLDER + "\\" + patternFile
-            if not os.path.isfile(patternFile):
-                flash('File ' + patternFile + ' does not exist!')
-                return render_template('auth/ProfessorGenerateMusic.html', form=form)
+        patternFile =  STATIC_FOLDER + "\\" + patternFile
+        lilyFile = STATIC_FOLDER + "\\" + os.path.basename(lilyFile).split('.')[0] + ".ly"
+        pdfScoreSheet = STATIC_FOLDER + "\\" + os.path.basename(lilyFile).split('.')[0]
 
-            lilyFile = STATIC_FOLDER + "\\" + os.path.basename(lilyFile).split('.')[0] + ".ly"
-            pdfScoreSheet = STATIC_FOLDER + "\\" + os.path.basename(lilyFile).split('.')[0]
+        # dctLetters will contain  a dictionary of frequencies of appearances for all letters that appear after
+        # the key of the dictionary.
+        dctLetters = buildFrequencyMatrix(patternFile)
+        # First valid letter that can be used for starting Markov's chain
+        firstLetter = getFirstValidChar(patternFile)
+        textToNotes = firstLetter
+        prevChar = firstLetter
 
-            # dctLetters will contain  a dictionary of frequencies of appearances for all letters that appear after
-            # the key of the dictionary.
-            dctLetters = buildFrequencyMatrix(patternFile)
-            # First valid letter that can be used for starting Markov's chain
-            firstLetter = getFirstValidChar(patternFile)
-            textToNotes = firstLetter
-            prevChar = firstLetter
+        for cnt in range(int(nrGeneratedNotes)):
+            nextChar = getNextLetter(prevChar, dctLetters)
+            if not(nextChar is not None and nextChar in char2notes.keys()):
+                # If it happens to return an invalid character, just generate a random char and continue the algorithm
+                nextChar = chr(randint(97, 122)).lower()
+            prevChar = nextChar
+            textToNotes = textToNotes + nextChar
 
-            for cnt in range(int(nrGeneratedNotes)):
-                nextChar = getNextLetter(prevChar, dctLetters)
-                if not(nextChar is not None and nextChar in char2notes.keys()):
-                    # If it happens to return an invalid character, just generate a random char and continue the algorithm
-                    nextChar = chr(randint(97, 122)).lower()
-                prevChar = nextChar
-                textToNotes = textToNotes + nextChar
+        title = ("\header {"
+                 "title = \"Computer generated music\""
+                 "composer = " + composer + " using Python"
+                 "tagline = \"Copyright: " + composer + "\""
+                 "}")
 
-            title = ("\header {"
-                     "title = \"Computer generated music\""
-                     "composer = " + composer + " using Python"
-                     "tagline = \"Copyright: " + composer + "\""
-                     "}")
+        # Generate the notes file in format that Lilypond can process
+        (upper_staff,lower_staff) =  GenerateStaff(textToNotes)
+        staff = "\score {\n"
+        staff += "{\n"
+        staff += "{\n\\new PianoStaff << \n"
+        staff += "  \\new Staff {" + upper_staff + "}\n"
+        staff += "  \\new Staff { \clef bass " + lower_staff + "}\n"
+        staff += ">>\n}\n"
+        staff += "}\n"
+        staff += "\layout { }\n"
+        staff += "\midi { }\n"
+        staff += "}\n"
 
-            # Generate the notes file in format that Lilypond can process
-            (upper_staff,lower_staff) =  GenerateStaff(textToNotes)
-            staff = "\score {\n"
-            staff += "{\n"
-            staff += "{\n\\new PianoStaff << \n"
-            staff += "  \\new Staff {" + upper_staff + "}\n"
-            staff += "  \\new Staff { \clef bass " + lower_staff + "}\n"
-            staff += ">>\n}\n"
-            staff += "}\n"
-            staff += "\layout { }\n"
-            staff += "\midi { }\n"
-            staff += "}\n"
+        file = open(lilyFile, "w")
+        file.write(title + staff)
+        file.close()
 
-            file = open(lilyFile, "w")
-            file.write(title + staff)
-            file.close()
+        cmd = "lilypond.exe -f pdf -o " + pdfScoreSheet + " " + lilyFile
+        os.system(cmd)
 
-            cmd = "lilypond.exe -f pdf -o " + pdfScoreSheet + " " + lilyFile
-            proc = subprocess.Popen(cmd, shell = True,stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-            (out, err) = proc.communicate()
-            if len(str(err)) > 0 and 'Changing working directory to' not in str(err):
-                flash('Error: ' + str(format(err)))
-            flashMsg = "Pdf score sheet: " + pdfScoreSheet + ".pdf and midi file: " + os.path.basename(lilyFile) + "/" + os.path.basename(lilyFile).split('.')[0] + ".midi have been created successfully"
-            flash(flashMsg)
-        except Exception as err:
-            flash('Error: ' + str(format(err)))
     return render_template('auth/ProfessorGenerateMusic.html', form = form)
-
-
 
 def GenerateStaff(phrase):
     # Define a dictionary that converts characters to notes.
@@ -1020,3 +969,4 @@ def getFirstValidChar(fileName):
             return crtLetter
 
     return crtLetter
+

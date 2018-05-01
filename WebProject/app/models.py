@@ -79,7 +79,7 @@ class AddStudent(UserMixin, db.Model):
 def load_director(director_id):
     return Director.query.get(int(director_id))
 
-#@login_manager.student_loader
+##@login_manager.student_loader
 #def load_student(student_id):
 #    return Student.query.get(int(student_id))
 
